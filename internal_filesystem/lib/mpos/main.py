@@ -246,10 +246,19 @@ def detect_board():
                 restore_i2c(sda=9, scl=18)
 
             if __debug__: logger.debug("tdeck / tdeck_plus ?")
-            # The LilyGo T-Deck / T-Deck Plus has its numpad keyboard
-            # controller at I2C 0x55 on the SDA=18/SCL=8 bus (shared with the
-            # GT911 touch panel). 0x55 is unique to the T-Deck family, so its
-            # presence unambiguously identifies the board.
+            # The LilyGo T-Deck Plus has its numpad keyboard controller at
+            # I2C 0x55 on the SDA=18/SCL=8 bus (shared with the GT911 touch
+            # panel). 0x55 is unique to the T-Deck family, so its presence
+            # unambiguously identifies the board.
+            #
+            # IMPORTANT: the T-Deck Plus routes power to the on-board
+            # peripherals (keyboard MCU, touch panel, LoRa, SD, ...) through
+            # the GPIO10 power-enable transistor. Until GPIO10 is driven HIGH
+            # the keyboard does not appear on the bus at 0x55, so both the
+            # board detection below AND the actual board module must raise it.
+            machine.Pin(10, machine.Pin.OUT, value=1)
+            import time
+            time.sleep_ms(200)  # let the peripherals power up and settle
             if i2c0 := fail_save_i2c(sda=18, scl=8):
                 if single_address_i2c_scan(i2c0, 0x55):
                     return "tdeck_plus"

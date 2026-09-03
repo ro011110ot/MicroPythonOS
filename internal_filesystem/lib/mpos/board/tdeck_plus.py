@@ -26,7 +26,7 @@ Reference pin mapping (from lvgl_micropython display_configs/LilyGo-TDeck):
   SD   : cs=39
   LoRa : cs=9, gpio=13, irq=45, rst=17
   Trackball: up=3, down=2, left=15, right=1, press=0
-  Power: GPIO 10
+  Power enum: GPIO 10 (drive HIGH to power the peripherals)
 """
 
 from micropython import const
@@ -67,12 +67,25 @@ TB_PRESS = const(0)
 # --- SD card ---
 SD_CS = const(39)
 
-# --- Power button ---
-PWR_BTN = const(10)
+# --- Power enable ---
+# GPIO10 drives the power-enable transistor that routes power to the on-board
+# peripherals (keyboard MCU, GT911 touch, LoRa, SD, ...). It must be driven
+# HIGH or the keyboard/touch will not appear on the I2C bus at all.
+POWER_EN = const(10)
 
 # --- Display geometry ---
 TFT_WIDTH = const(240)
 TFT_HEIGHT = const(320)
+
+
+def _enable_peripherals():
+    """Drive GPIO10 (power enable) HIGH so the on-board peripherals
+    (keyboard, touch, LoRa, SD) actually receive power. Without this the
+    numpad does not appear at I2C 0x55 and the GT911 touch does not latch a
+    stable address. Must run before any peripheral is configured."""
+    machine.Pin(POWER_EN, machine.Pin.OUT, value=1)
+    import time
+    time.sleep_ms(200)  # let the peripherals power up and settle
 
 
 def _init_display():
@@ -214,18 +227,13 @@ def _init_sd():
         logger.error("SD card init got exception: %s" % (e))
 
 
-def _init_power_button():
-    # The power button enters a low-power/off sequence in the hardware. Just
-    # wire it as a plain input for now so it doesn't float.
-    machine.Pin(PWR_BTN, machine.Pin.IN, machine.Pin.PULL_UP)
-
-
+_enable_peripherals()
 _init_display()
 
 
 def _after_display_rotation():
     try:
-        mpos.ui.main_display.set_rotation(lv.DISPLAY_ROTATION._0)
+        mpos.ui.main_display.set_rotation(lv.DISPLAY_ROTATION._90)  # rotate 90° clockwise to landscape
         mpos.ui.main_display.set_color_inversion(True)
     except Exception as e:
         logger.error("display rotation init got exception: %s" % (e))
@@ -236,7 +244,6 @@ _init_touch()
 _init_keyboard()
 _init_trackball()
 _init_sd()
-_init_power_button()
 
 
 if __debug__: logger.debug("tdeck_plus.py finished")
