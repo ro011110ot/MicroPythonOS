@@ -245,6 +245,16 @@ def detect_board():
                     return "fri3d_2024"
                 restore_i2c(sda=9, scl=18)
 
+            if __debug__: logger.debug("tdeck / tdeck_plus ?")
+            # The LilyGo T-Deck / T-Deck Plus has its numpad keyboard
+            # controller at I2C 0x55 on the SDA=18/SCL=8 bus (shared with the
+            # GT911 touch panel). 0x55 is unique to the T-Deck family, so its
+            # presence unambiguously identifies the board.
+            if i2c0 := fail_save_i2c(sda=18, scl=8):
+                if single_address_i2c_scan(i2c0, 0x55):
+                    return "tdeck_plus"
+                restore_i2c(sda=18, scl=8)
+
         else: # not is_esp32s3
 
             if __debug__: logger.debug("m5stack_core2 ?")
