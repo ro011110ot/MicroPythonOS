@@ -245,8 +245,12 @@ def _after_display_rotation():
         logger.error("display rotation init got exception: %s" % (e))
 
 
-_after_display_rotation()
+# NOTE: _init_touch() must run BEFORE _after_display_rotation(). The GT911
+# PointerDriver captures _orig_width/_orig_height from the display resolution at
+# construction time; if the display has already been rotated those snap the
+# swapped 320x240 dims and _calc_coords applies the rotation a second time.
 _init_touch()
+_after_display_rotation()
 _init_keyboard()
 _init_trackball()
 _init_sd()
