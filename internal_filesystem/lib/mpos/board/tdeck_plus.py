@@ -146,7 +146,13 @@ def _init_touch():
         if __debug__: logger.debug("GT911 touch address: 0x%02X", addr)
         import drivers.indev.gt911 as gt911
         touch_dev = i2c.I2C.Device(bus=i2c_bus, dev_id=addr, reg_bits=gt911.BITS)
-        indev = gt911.GT911(touch_dev, reset_pin=None, interrupt_pin=TP_INT, debug=False)
+        indev = gt911.GT911(
+            touch_dev,
+            reset_pin=None,
+            interrupt_pin=TP_INT,
+            startup_rotation=lv.DISPLAY_ROTATION._90,
+            debug=False,
+        )
         InputManager.register_indev(indev)
     except Exception as e:
         logger.error("Touch init got exception: %s" % (e))
