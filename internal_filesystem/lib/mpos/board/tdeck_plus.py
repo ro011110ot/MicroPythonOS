@@ -150,7 +150,9 @@ def _init_touch():
             touch_dev,
             reset_pin=None,
             interrupt_pin=TP_INT,
-            startup_rotation=lv.DISPLAY_ROTATION._90,
+            # st7789 rotated 90° CW pairs with startup_rotation=_180 for the
+            # touch mapping (same panel stack as waveshare_esp32_s3_touch_lcd_2).
+            startup_rotation=lv.DISPLAY_ROTATION._180,
             debug=False,
         )
         InputManager.register_indev(indev)
