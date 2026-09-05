@@ -48,6 +48,17 @@ jobs:
           version: apt-v2-ubuntu-24.04-${{ runner.arch }}
           execute_install_scripts: true
 
+      # ccache must not ride on the (fragile, versioned) apt-cache action above:
+      # a partial package install failure there silently leaves ccache absent and
+      # every later ccache call aborts the job (exit 127). Install it explicitly.
+      - name: Install ccache
+        run: |
+          if ! command -v ccache >/dev/null 2>&1; then
+            sudo apt-get update -qq || true
+            sudo apt-get install -y -qq ccache
+          fi
+          ccache --version
+
       - name: Restore compiler cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -87,7 +98,10 @@ jobs:
 
       - name: Show compiler cache statistics
         if: always()
-        run: ccache --show-stats
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          fi
 
 
   test:
