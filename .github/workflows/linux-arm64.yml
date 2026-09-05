@@ -59,6 +59,18 @@ jobs:
           fi
           ccache --version
 
+      # c_mpos links -lv4l2 (webcam module) on desktop Linux. libv4l-dev ships
+      # the libv4l2.so symlink but is installed via the fragile (versioned)
+      # apt-cache action above, which can silently skip packages. Install it
+      # explicitly so the unix link can never fail on a missing libv4l2.
+      - name: Install libv4l-dev for webcam support
+        run: |
+          if ! ls /usr/lib/*/libv4l2.so >/dev/null 2>&1; then
+            sudo apt-get update -qq || true
+            sudo apt-get install -y -qq libv4l-dev
+          fi
+          ls -la /usr/lib/*/libv4l2.so
+
       - name: Restore compiler cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
